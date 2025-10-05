@@ -192,7 +192,108 @@ There are 6 test files present inside the test directory, these are jupyter note
 
 Build workspace before running test scripts
 
+## <u>Obstacle Avoidance Exapansion</u>
+
+### Current System Limitation
+The existing navigation system operates under a static environment assumption, generating trajectories entirely offline through sequential stages—waypoint definition, path smoothing, and trajectory generation. The controller executes these pre-computed plans without environmental feedback, lacking real-time awareness or reactive capabilities. This design limitation necessitates controlled, obstacle-free operational spaces.
+
+### Strategic Expansion Approach
+
+#### Phase 1: Perception Layer Integration
+Integrate the BCR Bot's existing LiDAR sensor (/scan topic) into the control architecture as a parallel data stream. The perception module processes raw sensor data to extract minimum clearance distances and spatial obstacle distribution relative to the robot's frame, operating independently of the offline planning components.
+
+#### Phase 2: Reactive Controller Enhancement
+- Augment the Regulated Pure Pursuit controller with obstacle-aware velocity modulation while preserving existing trajectory tracking logic. Key enhancements include:
+
+- Proximity-Based Velocity Scaling: Graduated velocity reduction scaling linearly with obstacle proximity within a defined safety radius
+
+- Emergency Stop Protocol: Hard safety threshold triggering immediate velocity cessation when obstacles breach the safety envelope
+
+- Path Clearance Validation: Pre-execution verification that lookahead points remain collision-free by comparing planned distances against actual sensor measurements
+
+- This approach maintains validated path smoothing and trajectory generation algorithms while adding an execution-stage safety layer.
+
+#### Phase 3: Local Avoidance Logic
+Implement sector-based clearance analysis dividing the robot's surroundings into discrete angular segments. When the planned trajectory intersects with obstacles, the system transitions from trajectory tracking mode to obstacle avoidance mode using a greedy best-first strategy that selects maximum clearance sectors for temporary steering adjustments.
+
+Operational Modes:
+
+- Tracking Mode: Normal trajectory following
+
+- Slowing Mode: Reduced velocity with trajectory maintenance
+
+- Avoidance Mode: Temporary deviation using reactive steering
+
+- Emergency Mode: Complete stop at safety threshold violations
+
+#### Phase 4: Local Replanning Capability
+- Extend beyond reactive avoidance to intelligent trajectory modification through three components:
+
+- Collision Prediction: Forward projection of planned trajectory checking for intersections with detected obstacles using robot footprint geometry
+
+- Waypoint Injection: Generation of intermediate offset waypoints perpendicular to blocked trajectory segments
+
+- Local Path Regeneration: Application of existing B-spline smoothing to temporary waypoint sets, ensuring locally replanned segments maintain global trajectory characteristics
+
+graph LR
+
+    A[Waypoints] --> B[Path Smoothing]
+    B --> C[Trajectory Generation]
+    C --> D[Controller]
+    D --> E[Robot]
+    E --> F[LiDAR Sensing]
+    F --> G[Obstacle Detection]
+    G --> H{Collision Check}
+    H -->|Safe| I[Track Trajectory]
+    H -->|Blocked| J[Local Replan]
+    I --> D
+    J --> C
+
+|Component            |Our Implementation              |Nav2 Equivalent                 |
+|---------------------|--------------------------------|--------------------------------|
+|Path Smoothing       |B-spline/Clothoid               |NavFn/Smac Planner              |
+|Trajectory Generation|Curvature-Aware Forward-Backward|Controller trajectory generation|
+|Controller           |Regulated Pure Pursuit          |RPP Controller Plugin           |
+|Obstacle Detection   |Not implemented                 |Costmap 2D                      |
+|Localization         |Not implemented                 |AMCL                            |
+
+
+
+## <u>Real World Application</u>
+
+#### Construction Sites
+- Material Transport: Autonomous robots transport heavy building materials, tools, and equipment across dynamic construction sites, reducing worker fatigue and injury risk from repetitive heavy lifting tasks
+
+- Site Mapping & Inspection: Mobile robots equipped with sensors navigate hazardous areas to perform safety audits, structural inspections, and accurate floor planning without risking human workers
+
+- Logistics Coordination: Robots deliver materials to specific work zones following predetermined waypoints while adapting to constantly changing site layouts, equipment placement, and temporary obstacles
+
+#### Warehouse Automation
+- Inventory Management: Differential drive robots transport materials between stations with smooth trajectories preventing cargo spillage and minimizing mechanical wear through curvature-aware trajectory generation
+
+- Order Fulfillment: Autonomous mobile robots navigate warehouse aisles following optimized paths for efficient picking, packing, and shipping operations
+
+#### Healthcare Facilities
+
+- Medical Supply Delivery: Hospital robots transport medications, laboratory samples, and equipment through corridors with regulated velocity control ensuring smooth motion that prevents spillage of sensitive materials
+
+
+#### Manufacturing Facilities
+- Just-in-Time Delivery: AGVs execute predictable, repeatable trajectories (generated by B-spline and Clothoid methods) for part delivery, optimizing cycle times in structured production environments
+
+- Assembly Line Integration: Mobile robots move components between workstations following smooth paths that integrate different factory areas into continuous production processes
+
+#### Autonomous Delivery Services
+- Sidewalk Navigation: Delivery robots traverse pedestrian areas using smooth path planning for passenger comfort and energy efficiency while following predetermined routes
+
+- Last-Mile Logistics: Robots adapt to semi-structured outdoor environments with occasional dynamic obstacles like pedestrians or temporarily placed objects
+
+The system's modular architecture particularly suits semi-structured environments where waypoints can be pre-defined but require real-time adaptation for occasional obstacles, making the proposed obstacle avoidance extensions directly applicable to production deployment scenarios across these industries.
+
+
 ##  <u>Setup and Execution</u>
+
+Clone this repository and build it 
 
 ###  Setup 
 
