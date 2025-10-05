@@ -1,0 +1,11 @@
+cd ~/ros2_ws/src/path_trajectory_pkg
+
+# Create .gitignore
+cat > .gitignore << 'EOF'
+# Generated plots
+*.png
+*.jpg
+
+# Jupyter
+.ipynb_checkpoints/
+
